@@ -1,31 +1,31 @@
 from django.shortcuts import render
-from django.views.generic import DetailView
-from .models import Book, Library  #  Ensure Library is imported
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .models import UserProfile
 
-# Function-based view to list all books
-def list_books(request):
-    books = Book.objects.all()  #  Fetch all books from the database
-    return render(request, "relationship_app/list_books.html", {"books": books})
+# Role-based access checks
+def is_admin(user):
+    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Admin'
 
-# Class-based view to display details of a specific library
-class LibraryDetailView(DetailView):
-    model = Library  # Uses the Library model
-    template_name = "relationship_app/library_detail.html"
-    context_object_name = "library"
- from .models import Library
+def is_librarian(user):
+    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Librarian'
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login
+def is_member(user):
+    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Member'
 
-def register(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)  # Automatically log in the user after registration
-            return redirect('login')
-    else:
-        form = UserCreationForm()
-    
-    return render(request, 'register.html', {'form': form})
+# Admin View
+@login_required
+@user_passes_test(is_admin)
+def admin_view(request):
+    return render(request, 'admin_view.html')
+
+# Librarian View
+@login_required
+@user_passes_test(is_librarian)
+def librarian_view(request):
+    return render(request, 'librarian_view.html')
+
+# Member View
+@login_required
+@user_passes_test(is_member)
+def member_view(request):
+    return render(request, 'member_view.html')
